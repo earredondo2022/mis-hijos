@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mis hijos">
+<meta name="theme-color" content="#f1f3f6">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Mis hijos</title>
+<style>
+:root{
+  --bg:#f1f3f6; --card:#ffffff; --ink:#1b2533; --muted:#677487; --line:#dde2ea;
+  --kids:#2e5aac; --kids-soft:#d8e2f6; --kids-ink:#ffffff;
+  --ev:#e8a317; --danger:#b3261e; --ok:#2f7d4f;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#10151c; --card:#19212c; --ink:#e8edf4; --muted:#93a0b3; --line:#2a3544;
+    --kids:#5b86d6; --kids-soft:#23324a; --kids-ink:#ffffff;
+    --ev:#f2b53a; --danger:#ff8a80; --ok:#6fcf97;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);
+  font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--kids);outline-offset:2px}
+
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 8px}
+header.top h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}
+main{padding:4px 16px calc(96px + env(safe-area-inset-bottom,0px));max-width:640px;margin:0 auto}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs button{background:none;border:0;padding:8px 0 6px;color:var(--muted);font-size:11px;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button.on{color:var(--kids);font-weight:700}
+
+.monthbar{display:flex;align-items:center;gap:8px;margin:6px 0 12px}
+.monthbar h2{margin:0;font-size:20px;flex:1;min-width:0;text-transform:capitalize;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{min-width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:18px;padding:0 10px}
+
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:12px;color:var(--muted);padding:2px 0 4px;font-weight:700}
+.day{aspect-ratio:1/1.1;border-radius:10px;background:var(--card);border:1px solid var(--line);position:relative;
+  display:flex;align-items:flex-start;justify-content:flex-start;padding:5px 0 0 7px;font-size:15px;font-weight:600}
+.day.empty{visibility:hidden}
+.day.full{background:var(--kids);color:var(--kids-ink);border-color:var(--kids)}
+.day.start{background:linear-gradient(135deg,var(--card) 50%,var(--kids) 50%);border-color:var(--kids)}
+.day.end{background:linear-gradient(135deg,var(--kids) 50%,var(--card) 50%);color:var(--kids-ink);border-color:var(--kids)}
+.day.mixed{background:var(--kids-soft);border-color:var(--kids)}
+.day.today span:first-child{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.dots{position:absolute;right:6px;bottom:6px;display:flex;gap:3px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ev);box-shadow:0 0 0 1.5px var(--card)}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 2px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:12px 0}
+.stat{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0}
+.stat b{font-size:22px;font-weight:800}
+.stat.small b{font-size:16px;font-weight:700}
+.muted{color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:4px 0 0}
+h3{margin:0 0 10px;font-size:19px}
+h4{margin:14px 0 6px;font-size:15px;color:var(--muted);font-weight:700}
+
+.item{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .body{flex:1;min-width:0}
+.item .t{font-weight:700}
+.item .s{font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.item .amt{font-weight:800;white-space:nowrap}
+.bar{width:6px;align-self:stretch;border-radius:3px;background:var(--kids);flex:none}
+.bar.ev{background:var(--ev)}
+.linkbtn{background:none;border:0;color:var(--kids);font-weight:700;padding:6px 0}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 18px;border-radius:14px;
+  border:0;background:var(--kids);color:#fff;font-weight:700;font-size:16px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn.block{width:100%}
+.row{display:flex;gap:10px;margin-top:14px}
+.row > *{flex:1}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600}
+
+label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-top:12px}
+input,select,textarea{display:block;width:100%;margin-top:5px;font:inherit;font-size:16px;color:var(--ink);
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;min-height:46px;-webkit-appearance:none;appearance:none}
+textarea{min-height:80px;resize:vertical}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+
+.banner{background:var(--kids-soft);border-radius:14px;padding:12px 14px;margin:6px 0 10px;display:flex;gap:10px;align-items:center;font-size:14px}
+.banner .btn{min-height:38px;padding:0 12px;font-size:14px;flex:none}
+.empty-state{text-align:center;padding:26px 10px;color:var(--muted)}
+
+.backdrop{position:fixed;inset:0;z-index:30;background:rgba(10,15,25,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:640px;border-radius:22px 22px 0 0;
+  padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto;-webkit-overflow-scrolling:touch}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:-6px auto 12px}
+@media (prefers-reduced-motion:no-preference){ .sheet{animation:up .22s ease-out} @keyframes up{from{transform:translateY(40px);opacity:.4}} }
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:40;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;max-width:90vw}
+.tipo-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+.tipo-row:first-child{border-top:0}
+.x{background:none;border:0;color:var(--danger);font-size:14px;font-weight:700;padding:6px}
+</style>
+</head>
+<body>
+<header class="top"><h1 id="title">Mis hijos</h1></header>
+<main id="main"></main>
+
+<nav class="tabs" id="tabs">
+  <button data-act="tab" data-v="cal"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendario</button>
+  <button data-act="tab" data-v="per"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c.6-3 2.6-5 5-5s4.4 2 5 5M11 20c.6-3 2.6-5 5-5s4.4 2 5 5"/></svg>Periodos</button>
+  <button data-act="tab" data-v="ev"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/></svg>Eventos</button>
+  <button data-act="tab" data-v="res"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumen</button>
+  <button data-act="tab" data-v="aj"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>Ajustes</button>
+</nav>
+<input type="file" id="fileIn" hidden>
+
+<script>
+'use strict';
+/* ---------- Datos ---------- */
+const KEY = 'calhijos:v1';
+const DEFAULT_TIPOS = ['Compra de zapatos', 'Útiles escolares', 'Consulta médica'];
+const RE_DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const RE_D = /^\d{4}-\d{2}-\d{2}$/;
+
+function uid(){
+  try { if (crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e){}
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function defaultData(){
+  return { app:'calendario-hijos', version:1, hijos:['Hijo 1','Hijo 2'], tipos:[...DEFAULT_TIPOS],
+           periodos:[], eventos:[], ultimoRespaldo:null };
+}
+function cleanPeriodo(p){
+  if (!p || typeof p.inicio !== 'string' || typeof p.fin !== 'string') return null;
+  if (!RE_DT.test(p.inicio) || !RE_DT.test(p.fin)) return null;
+  const inicio = p.inicio.slice(0,16), fin = p.fin.slice(0,16);
+  if (parseLocal(fin) <= parseLocal(inicio)) return null;
+  return { id: typeof p.id === 'string' && p.id ? p.id : uid(), inicio, fin, nota: String(p.nota ?? '') };
+}
+function cleanEvento(e){
+  if (!e || typeof e.fecha !== 'string' || !RE_D.test(e.fecha) || typeof e.tipo !== 'string' || !e.tipo.trim()) return null;
+  const monto = (e.monto === null || e.monto === '' || e.monto === undefined) ? null : Math.round(Number(e.monto));
+  return { id: typeof e.id === 'string' && e.id ? e.id : uid(), fecha:e.fecha, tipo:e.tipo.trim(),
+           hijo: ['ambos','0','1'].includes(String(e.hijo)) ? String(e.hijo) : 'ambos',
+           monto: Number.isFinite(monto) ? monto : null,
+           factura: String(e.factura ?? ''), detalle: String(e.detalle ?? '') };
+}
+function normalize(d){
+  const b = defaultData();
+  const hijos = Array.isArray(d.hijos) && d.hijos.length === 2 ? d.hijos.map(x => String(x || '').trim() || 'Hijo') : b.hijos;
+  const tipos = Array.isArray(d.tipos) ? [...new Set(d.tipos.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))] : b.tipos;
+  return { ...b, hijos, tipos,
+    periodos: (Array.isArray(d.periodos) ? d.periodos : []).map(cleanPeriodo).filter(Boolean),
+    eventos: (Array.isArray(d.eventos) ? d.eventos : []).map(cleanEvento).filter(Boolean),
+    ultimoRespaldo: typeof d.ultimoRespaldo === 'string' ? d.ultimoRespaldo : null };
+}
+function load(){
+  try { const raw = localStorage.getItem(KEY); if (!raw) return defaultData(); return normalize(JSON.parse(raw)); }
+  catch(e){ console.error(e); return defaultData(); }
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(data)); return true; }
+  catch(e){ alert('No se pudo guardar en el teléfono: ' + e.message + '\nExporta un respaldo ahora.'); return false; }
+}
+let data = load();
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+
+/* ---------- Utilidades de fecha y formato ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const clp = new Intl.NumberFormat('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 });
+const fmtCLP = n => clp.format(n || 0);
+function parseLocal(s){
+  const [d, t = '00:00'] = s.split('T'); const [y,m,dd] = d.split('-').map(Number); const [h,mi] = t.split(':').map(Number);
+  return new Date(y, m-1, dd, h || 0, mi || 0);
+}
+const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const toLocalStr = d => `${dateKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function fmtFechaHora(s){ const d = parseLocal(s); return `${DIAS[d.getDay()]} ${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function fmtFecha(s){ const d = parseLocal(s); return `${DIAS[d.getDay()]} ${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()}`; }
+const fmtDias = x => (Math.round(x*10)/10).toLocaleString('es-CL', { maximumFractionDigits:1 });
+const duracionDias = p => (parseLocal(p.fin) - parseLocal(p.inicio)) / 864e5;
+const nombreHijo = h => h === 'ambos' ? 'Ambos' : (data.hijos[Number(h)] || 'Hijo');
+
+/* Cobertura de un día del calendario por los periodos */
+function coverage(dt){
+  const ds = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const de = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()+1);
+  let starts = 0, ends = 0, inside = 0;
+  for (const p of data.periodos){
+    const s = parseLocal(p.inicio), e = parseLocal(p.fin);
+    if (s < de && e > ds){
+      if (s <= ds && e >= de) return 'full';
+      if (s > ds && e < de) inside++; else if (s > ds) starts++; else ends++;
+    }
+  }
+  if (inside || (starts && ends)) return 'mixed';
+  if (starts) return 'start';
+  if (ends) return 'end';
+  return '';
+}
+/* Días (en horas/24) con los niños dentro de un mes */
+function diasEnMes(y, m){
+  const ms = new Date(y, m, 1), me = new Date(y, m+1, 1); let t = 0;
+  for (const p of data.periodos){
+    const s = Math.max(parseLocal(p.inicio), ms), e = Math.min(parseLocal(p.fin), me);
+    if (e > s) t += e - s;
+  }
+  return t / 864e5;
+}
+const mesKey = (y,m) => `${y}-${pad(m+1)}`;
+const eventosMes = (y,m) => data.eventos.filter(e => e.fecha.startsWith(mesKey(y,m)));
+const periodosDeDia = k => { const d = parseLocal(k), de = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1);
+  return data.periodos.filter(p => parseLocal(p.inicio) < de && parseLocal(p.fin) > d); };
+const sortEv = (a,b) => b.fecha.localeCompare(a.fecha);
+
+/* ---------- Estado de UI ---------- */
+const hoy = new Date();
+let cur = { y: hoy.getFullYear(), m: hoy.getMonth() };
+let view = 'cal';
+let evTodos = false;
+
+function toast(msg){
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+function monthbar(){
+  return `<div class="monthbar"><h2>${MESES[cur.m]} ${cur.y}</h2>
+    <button class="iconbtn" data-act="prev" aria-label="Mes anterior">‹</button>
+    <button class="iconbtn" data-act="hoy">Hoy</button>
+    <button class="iconbtn" data-act="next" aria-label="Mes siguiente">›</button></div>`;
+}
+function diasSinRespaldo(){
+  if (!data.periodos.length && !data.eventos.length) return 0;
+  if (!data.ultimoRespaldo) return Infinity;
+  return Math.floor((Date.now() - new Date(data.ultimoRespaldo)) / 864e5);
+}
+function bannerRespaldo(){
+  const d = diasSinRespaldo();
+  if (d < 14) return '';
+  const txt = d === Infinity ? 'Aún no has exportado un respaldo.' : `Llevas ${d} días sin exportar un respaldo.`;
+  return `<div class="banner"><span style="flex:1">${txt}</span><button class="btn" data-act="export">Exportar</button></div>`;
+}
+
+/* ---------- Vistas ---------- */
+function renderCal(){
+  const { y, m } = cur;
+  const offset = (new Date(y, m, 1).getDay() + 6) % 7; // semana parte el lunes
+  const nd = new Date(y, m+1, 0).getDate();
+  const porDia = {};
+  for (const e of data.eventos) (porDia[e.fecha] = porDia[e.fecha] || []).push(e);
+  const hk = dateKey(new Date());
+  let cells = ['L','M','M','J','V','S','D'].map(d => `<div class="dow">${d}</div>`).join('');
+  for (let i = 0; i < offset; i++) cells += '<div class="day empty"></div>';
+  for (let d = 1; d <= nd; d++){
+    const dt = new Date(y, m, d), k = dateKey(dt), n = (porDia[k] || []).length;
+    cells += `<button class="day ${coverage(dt)} ${k === hk ? 'today' : ''}" data-act="day" data-day="${k}" aria-label="${fmtFecha(k)}">
+      <span>${d}</span>${n ? `<span class="dots">${'<i class="dot"></i>'.repeat(Math.min(n,3))}</span>` : ''}</button>`;
+  }
+  const evs = eventosMes(y, m), total = evs.reduce((a,e) => a + (e.monto || 0), 0);
+  return `${bannerRespaldo()}${monthbar()}<div class="grid">${cells}</div>
+    <div class="legend"><span><i style="background:var(--kids)"></i>Conmigo</span>
+      <span><i style="background:linear-gradient(135deg,var(--card) 50%,var(--kids) 50%);border:1px solid var(--kids)"></i>Llegan ese día</span>
+      <span><i style="background:linear-gradient(135deg,var(--kids) 50%,var(--card) 50%);border:1px solid var(--kids)"></i>Se van ese día</span>
+      <span><i style="background:var(--ev);border-radius:50%"></i>Evento</span></div>
+    <div class="panel">
+      <div class="stat"><span>Días conmigo este mes</span><b>${fmtDias(diasEnMes(y,m))}</b></div>
+      <div class="stat small"><span>Gastos del mes (${evs.length} ${evs.length === 1 ? 'evento' : 'eventos'})</span><b>${fmtCLP(total)}</b></div>
+    </div>
+    <div class="row"><button class="btn" data-act="newP">Nuevo periodo</button><button class="btn ghost" data-act="newE">Nuevo evento</button></div>`;
+}
+
+function periodoItem(p){
+  return `<div class="item"><div class="bar"></div><div class="body">
+    <div class="t">${fmtDias(duracionDias(p))} días</div>
+    <div class="s">Desde ${fmtFechaHora(p.inicio)}<br>Hasta ${fmtFechaHora(p.fin)}${p.nota ? `<br>${esc(p.nota)}` : ''}</div>
+    <button class="linkbtn" data-act="editP" data-id="${esc(p.id)}">Editar</button></div></div>`;
+}
+function renderPer(){
+  const list = [...data.periodos].sort((a,b) => b.inicio.localeCompare(a.inicio));
+  return `<button class="btn block" data-act="newP" style="margin:6px 0 4px">Nuevo periodo</button>
+    <div class="panel">${list.length ? list.map(periodoItem).join('') :
+      '<div class="empty-state">Registra el primer periodo con fecha y hora de llegada y de salida.</div>'}</div>`;
+}
+
+function eventoItem(e){
+  const partes = [nombreHijo(e.hijo)];
+  if (e.factura) partes.push('N° ' + esc(e.factura));
+  return `<div class="item"><div class="bar ev"></div><div class="body">
+    <div class="t">${esc(e.tipo)}</div>
+    <div class="s">${fmtFecha(e.fecha)}<br>${partes.join(', ')}${e.detalle ? `<br>${esc(e.detalle)}` : ''}</div>
+    <button class="linkbtn" data-act="editE" data-id="${esc(e.id)}">Editar</button></div>
+    ${e.monto !== null ? `<div class="amt">${fmtCLP(e.monto)}</div>` : ''}</div>`;
+}
+function renderEv(){
+  const list = (evTodos ? [...data.eventos] : eventosMes(cur.y, cur.m)).sort(sortEv);
+  const total = list.reduce((a,e) => a + (e.monto || 0), 0);
+  return `${evTodos ? '<div class="monthbar"><h2>Todos los eventos</h2></div>' : monthbar()}
+    <div class="chips"><button class="chip" data-act="todos">${evTodos ? 'Ver por mes' : 'Ver todos'}</button></div>
+    <button class="btn block" data-act="newE" style="margin:12px 0 4px">Nuevo evento</button>
+    <div class="panel">${list.length ? list.map(eventoItem).join('') +
+      `<div class="stat small" style="border-top:1px solid var(--line);margin-top:4px;padding-top:10px"><span>Total</span><b>${fmtCLP(total)}</b></div>`
+      : '<div class="empty-state">No hay eventos en este periodo. Registra compras, consultas u otros gastos.</div>'}</div>`;
+}
+
+function renderRes(){
+  const { y, m } = cur, evs = eventosMes(y, m);
+  const sum = key => { const o = {}; for (const e of evs){ const k = key(e); o[k] = (o[k] || 0) + (e.monto || 0); } return Object.entries(o).sort((a,b) => b[1]-a[1]); };
+  const rows = arr => arr.length ? arr.map(([k,v]) => `<div class="stat small"><span>${esc(k)}</span><b>${fmtCLP(v)}</b></div>`).join('') : '<p class="hint">Sin gastos este mes.</p>';
+  const total = evs.reduce((a,e) => a + (e.monto || 0), 0);
+  const nPer = data.periodos.filter(p => parseLocal(p.inicio) < new Date(y,m+1,1) && parseLocal(p.fin) > new Date(y,m,1)).length;
+  return `${monthbar()}
+    <div class="panel"><div class="stat"><span>Días conmigo</span><b>${fmtDias(diasEnMes(y,m))}</b></div>
+      <div class="stat small"><span>Periodos en el mes</span><b>${nPer}</b></div>
+      <p class="hint">Se cuentan las horas reales dentro del mes divididas por 24.</p></div>
+    <div class="panel"><div class="stat"><span>Gastos del mes</span><b>${fmtCLP(total)}</b></div>
+      <h4>Por tipo</h4>${rows(sum(e => e.tipo))}
+      <h4>Por hijo</h4>${rows(sum(e => nombreHijo(e.hijo)))}</div>`;
+}
+
+function renderAj(){
+  const size = new Blob([localStorage.getItem(KEY) || '']).size;
+  const ult = data.ultimoRespaldo ? new Date(data.ultimoRespaldo).toLocaleString('es-CL') : 'nunca';
+  return `<div class="panel"><h3>Respaldo</h3>
+      <p class="hint">Último respaldo exportado: ${esc(ult)}. Datos guardados: ${(size/1024).toFixed(1)} KB.</p>
+      <p class="hint">Si borras la app del iPhone, sus datos se borran con ella. Exporta un respaldo y guárdalo en Archivos o iCloud Drive.</p>
+      <div class="row"><button class="btn" data-act="export">Exportar respaldo</button><button class="btn ghost" data-act="import">Importar respaldo</button></div></div>
+    <div class="panel"><h3>Nombres</h3>
+      <label>Primer hijo<input id="h0" value="${esc(data.hijos[0])}" maxlength="30"></label>
+      <label>Segundo hijo<input id="h1" value="${esc(data.hijos[1])}" maxlength="30"></label>
+      <button class="btn block" data-act="saveNames" style="margin-top:12px">Guardar nombres</button></div>
+    <div class="panel"><h3>Tipos de evento</h3>
+      ${data.tipos.map((t,i) => `<div class="tipo-row"><span>${esc(t)}</span><button class="x" data-act="delTipo" data-i="${i}">Quitar</button></div>`).join('') || '<p class="hint">Sin tipos.</p>'}
+      <label>Nuevo tipo<input id="nuevoTipo" maxlength="40" placeholder="Ej: Ropa, Cumpleaños, Remedios"></label>
+      <button class="btn ghost block" data-act="addTipo" style="margin-top:10px">Agregar tipo</button>
+      <p class="hint">Quitar un tipo no borra los eventos que ya lo usan.</p></div>
+    <div class="panel"><h3>Borrar todo</h3><p class="hint">Elimina todos los periodos y eventos de este teléfono. Exporta un respaldo antes.</p>
+      <button class="btn danger block" data-act="reset" style="margin-top:10px">Borrar todos los datos</button></div>
+    <p class="hint" style="text-align:center">Versión 1.0</p>`;
+}
+
+function render(){
+  const views = { cal:renderCal, per:renderPer, ev:renderEv, res:renderRes, aj:renderAj };
+  const titles = { cal:'Mis hijos', per:'Periodos', ev:'Eventos', res:'Resumen', aj:'Ajustes' };
+  $('#main').innerHTML = views[view]();
+  $('#title').textContent = titles[view];
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+}
+
+/* ---------- Hojas (formularios) ---------- */
+function openSheet(html){
+  closeSheet();
+  const bd = document.createElement('div'); bd.className = 'backdrop'; bd.id = 'sheet';
+  bd.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  bd.addEventListener('click', e => { if (e.target === bd) closeSheet(); });
+  document.body.appendChild(bd); document.body.style.overflow = 'hidden';
+}
+function closeSheet(){ const s = $('#sheet'); if (s) s.remove(); document.body.style.overflow = ''; }
+
+function daySheet(k){
+  const pers = periodosDeDia(k), evs = data.eventos.filter(e => e.fecha === k);
+  openSheet(`<h3>${fmtFecha(k)}</h3>
+    ${pers.length ? `<h4>Periodo</h4>${pers.map(periodoItem).join('')}` : '<p class="hint">Este día no está dentro de ningún periodo.</p>'}
+    ${evs.length ? `<h4>Eventos</h4>${evs.map(eventoItem).join('')}` : ''}
+    <div class="row"><button class="btn" data-act="newE" data-day="${k}">Nuevo evento</button>
+      <button class="btn ghost" data-act="newP" data-day="${k}">Nuevo periodo</button></div>`);
+}
+
+function formPeriodo(p, dia){
+  const isNew = !p;
+  p = p || { id: uid(), inicio: dia ? `${dia}T20:00` : '', fin:'', nota:'' };
+  openSheet(`<h3>${isNew ? 'Nuevo periodo' : 'Editar periodo'}</h3>
+    <label>Llegan (fecha y hora)<input type="datetime-local" id="pIni" value="${esc(p.inicio)}"></label>
+    <label>Se van (fecha y hora)<input type="datetime-local" id="pFin" value="${esc(p.fin)}"></label>
+    <div class="chips"><button class="chip" data-add="7">+7 días</button><button class="chip" data-add="14">+14 días</button></div>
+    <p class="hint" id="pDur"></p>
+    <label>Nota (opcional)<input id="pNota" value="${esc(p.nota)}" maxlength="120"></label>
+    <div class="row">${isNew ? '<button class="btn ghost" data-act="close">Cancelar</button>' :
+      `<button class="btn danger" data-act="delP" data-id="${esc(p.id)}">Eliminar</button>`}
+      <button class="btn" id="pSave">Guardar</button></div>`);
+  const ini = $('#pIni'), fin = $('#pFin'), dur = $('#pDur');
+  const upd = () => {
+    if (ini.value && fin.value){
+      const d = (parseLocal(fin.value) - parseLocal(ini.value)) / 864e5;
+      dur.textContent = d > 0 ? `Duración: ${fmtDias(d)} días` : 'La salida debe ser posterior a la llegada.';
+    } else dur.textContent = 'Usa +7 o +14 días para completar la salida desde la llegada.';
+  };
+  ini.addEventListener('input', upd); fin.addEventListener('input', upd); upd();
+  document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
+    if (!ini.value){ toast('Primero indica la llegada'); return; }
+    const d = parseLocal(ini.value); d.setDate(d.getDate() + Number(b.dataset.add));
+    fin.value = toLocalStr(d); upd();
+  }));
+  $('#pSave').addEventListener('click', () => {
+    const np = cleanPeriodo({ id:p.id, inicio:ini.value, fin:fin.value, nota:$('#pNota').value.trim() });
+    if (!np){ alert('Revisa las fechas: ambas son obligatorias y la salida debe ser posterior a la llegada.'); return; }
+    const s = parseLocal(np.inicio), e = parseLocal(np.fin);
+    const choca = data.periodos.some(o => o.id !== np.id && parseLocal(o.inicio) < e && parseLocal(o.fin) > s);
+    if (choca && !confirm('Este periodo se superpone con otro ya registrado. ¿Guardar igual?')) return;
+    data.periodos = data.periodos.filter(o => o.id !== np.id).concat(np);
+    if (save()){ closeSheet(); cur = { y:s.getFullYear(), m:s.getMonth() }; render(); toast('Periodo guardado'); }
+  });
+}
+
+function formEvento(ev, dia){
+  const isNew = !ev;
+  ev = ev || { id: uid(), fecha: dia || dateKey(new Date()), tipo: data.tipos[0] || '', hijo:'ambos', monto:null, factura:'', detalle:'' };
+  const tipos = data.tipos.includes(ev.tipo) || !ev.tipo ? data.tipos : [ev.tipo, ...data.tipos];
+  openSheet(`<h3>${isNew ? 'Nuevo evento' : 'Editar evento'}</h3>
+    <label>Fecha<input type="date" id="eFecha" value="${esc(ev.fecha)}"></label>
+    <label>Tipo<select id="eTipo">${tipos.map(t => `<option ${t === ev.tipo ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+      <option value="__nuevo">Otro tipo…</option></select></label>
+    <label id="eNuevoWrap" hidden>Nombre del nuevo tipo<input id="eNuevo" maxlength="40"></label>
+    <label>Para<select id="eHijo">
+      <option value="ambos" ${ev.hijo === 'ambos' ? 'selected' : ''}>Ambos</option>
+      <option value="0" ${ev.hijo === '0' ? 'selected' : ''}>${esc(data.hijos[0])}</option>
+      <option value="1" ${ev.hijo === '1' ? 'selected' : ''}>${esc(data.hijos[1])}</option></select></label>
+    <label>Monto en pesos (opcional)<input id="eMonto" inputmode="numeric" value="${ev.monto !== null ? esc(ev.monto.toLocaleString('es-CL')) : ''}" placeholder="Ej: 35.990"></label>
+    <label>N° de factura o boleta (opcional)<input id="eFact" value="${esc(ev.factura)}" maxlength="40"></label>
+    <label>Detalle (opcional)<textarea id="eDet" maxlength="1000" placeholder="Tienda, médico, talla, medio de pago…">${esc(ev.detalle)}</textarea></label>
+    <div class="row">${isNew ? '<button class="btn ghost" data-act="close">Cancelar</button>' :
+      `<button class="btn danger" data-act="delE" data-id="${esc(ev.id)}">Eliminar</button>`}
+      <button class="btn" id="eSave">Guardar</button></div>`);
+  if (!tipos.length) $('#eTipo').value = '__nuevo';
+  const tipoSel = $('#eTipo'), wrap = $('#eNuevoWrap');
+  const updTipo = () => { wrap.hidden = tipoSel.value !== '__nuevo'; };
+  tipoSel.addEventListener('change', updTipo); updTipo();
+  $('#eMonto').addEventListener('input', e => {
+    const dig = e.target.value.replace(/\D/g, '');
+    e.target.value = dig ? Number(dig).toLocaleString('es-CL') : '';
+  });
+  $('#eSave').addEventListener('click', () => {
+    let tipo = tipoSel.value;
+    if (tipo === '__nuevo'){
+      tipo = $('#eNuevo').value.trim();
+      if (!tipo){ alert('Escribe el nombre del nuevo tipo.'); return; }
+      if (!data.tipos.includes(tipo)) data.tipos.push(tipo);
+    }
+    const dig = $('#eMonto').value.replace(/\D/g, '');
+    const ne = cleanEvento({ id:ev.id, fecha:$('#eFecha').value, tipo, hijo:$('#eHijo').value,
+      monto: dig ? Number(dig) : null, factura:$('#eFact').value.trim(), detalle:$('#eDet').value.trim() });
+    if (!ne){ alert('La fecha y el tipo son obligatorios.'); return; }
+    data.eventos = data.eventos.filter(o => o.id !== ne.id).concat(ne);
+    if (save()){ closeSheet(); const d = parseLocal(ne.fecha); cur = { y:d.getFullYear(), m:d.getMonth() }; render(); toast('Evento guardado'); }
+  });
+}
+
+/* ---------- Respaldo ---------- */
+function stamp(){ const d = new Date(); return `${dateKey(d)}_${pad(d.getHours())}${pad(d.getMinutes())}`; }
+function marcarRespaldo(){ data.ultimoRespaldo = new Date().toISOString(); save(); render(); }
+async function exportar(){
+  const payload = { ...data, app:'calendario-hijos', version:1, exportadoEn:new Date().toISOString() };
+  const json = JSON.stringify(payload, null, 2);
+  const name = `respaldo-hijos-${stamp()}.json`;
+  let file = null;
+  try { file = new File([json], name, { type:'application/json' }); } catch(e){}
+  if (file && navigator.canShare && navigator.canShare({ files:[file] })){
+    try { await navigator.share({ files:[file], title:name }); marcarRespaldo(); toast('Respaldo exportado'); return; }
+    catch(e){ if (e && e.name === 'AbortError') return; }
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([json], { type:'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    marcarRespaldo(); toast('Respaldo exportado');
+  } catch(e){
+    openSheet(`<h3>Copia tu respaldo</h3><p class="hint">No se pudo crear el archivo. Copia este texto y guárdalo en Notas o Archivos como ${esc(name)}.</p>
+      <textarea style="min-height:240px" readonly>${esc(json)}</textarea><button class="btn block" data-act="close" style="margin-top:12px">Listo</button>`);
+  }
+}
+$('#fileIn').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    if (!obj || !Array.isArray(obj.periodos) || !Array.isArray(obj.eventos)) throw new Error('el archivo no es un respaldo de esta app.');
+    const nd = normalize(obj);
+    if (!confirm(`El respaldo tiene ${nd.periodos.length} periodos y ${nd.eventos.length} eventos.\n\nReemplazará los datos actuales (${data.periodos.length} periodos y ${data.eventos.length} eventos). ¿Continuar?`)) return;
+    data = nd;
+    if (save()){ render(); toast('Respaldo importado'); }
+  } catch(err){ alert('No se pudo importar: ' + err.message); }
+});
+
+/* ---------- Acciones ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act, id = t.dataset.id;
+  const shift = n => { const d = new Date(cur.y, cur.m + n, 1); cur = { y:d.getFullYear(), m:d.getMonth() }; render(); };
+  switch (a){
+    case 'tab': view = t.dataset.v; closeSheet(); render(); window.scrollTo(0,0); break;
+    case 'prev': shift(-1); break;
+    case 'next': shift(1); break;
+    case 'hoy': { const d = new Date(); cur = { y:d.getFullYear(), m:d.getMonth() }; render(); break; }
+    case 'day': daySheet(t.dataset.day); break;
+    case 'newP': formPeriodo(null, t.dataset.day); break;
+    case 'editP': formPeriodo(data.periodos.find(p => p.id === id)); break;
+    case 'delP':
+      if (confirm('¿Eliminar este periodo?')){ data.periodos = data.periodos.filter(p => p.id !== id); if (save()){ closeSheet(); render(); toast('Periodo eliminado'); } }
+      break;
+    case 'newE': formEvento(null, t.dataset.day); break;
+    case 'editE': formEvento(data.eventos.find(x => x.id === id)); break;
+    case 'delE':
+      if (confirm('¿Eliminar este evento?')){ data.eventos = data.eventos.filter(x => x.id !== id); if (save()){ closeSheet(); render(); toast('Evento eliminado'); } }
+      break;
+    case 'close': closeSheet(); break;
+    case 'todos': evTodos = !evTodos; render(); break;
+    case 'export': exportar(); break;
+    case 'import': $('#fileIn').click(); break;
+    case 'saveNames':
+      data.hijos = [$('#h0').value.trim() || 'Hijo 1', $('#h1').value.trim() || 'Hijo 2'];
+      if (save()){ render(); toast('Nombres guardados'); }
+      break;
+    case 'addTipo': {
+      const v = $('#nuevoTipo').value.trim();
+      if (!v) return;
+      if (data.tipos.includes(v)){ toast('Ese tipo ya existe'); return; }
+      data.tipos.push(v); if (save()){ render(); toast('Tipo agregado'); }
+      break;
+    }
+    case 'delTipo': {
+      const i = Number(t.dataset.i);
+      if (confirm(`¿Quitar el tipo "${data.tipos[i]}"?`)){ data.tipos.splice(i,1); if (save()) render(); }
+      break;
+    }
+    case 'reset':
+      if (confirm('¿Borrar todos los periodos y eventos de este teléfono?') && confirm('Esta acción no se puede deshacer. ¿Confirmas?')){
+        data = { ...defaultData(), hijos:data.hijos, tipos:data.tipos }; if (save()){ render(); toast('Datos borrados'); }
+      }
+      break;
+  }
+});
+
+render();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW:', err));
+}
+</script>
+</body>
+</html>
