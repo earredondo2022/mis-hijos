@@ -20,11 +20,19 @@
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#10151c; --card:#19212c; --ink:#e8edf4; --muted:#93a0b3; --line:#2a3544;
     --kids:#5b86d6; --kids-soft:#23324a; --kids-ink:#ffffff;
     --ev:#f2b53a; --danger:#ff8a80; --ok:#6fcf97;
   }
+}
+/* Tema elegido a mano con el botón del encabezado (tiene prioridad sobre el del sistema) */
+:root[data-theme="light"]{ color-scheme: light; }
+:root[data-theme="dark"]{
+  --bg:#10151c; --card:#19212c; --ink:#e8edf4; --muted:#93a0b3; --line:#2a3544;
+  --kids:#5b86d6; --kids-soft:#23324a; --kids-ink:#ffffff;
+  --ev:#f2b53a; --danger:#ff8a80; --ok:#6fcf97;
+  color-scheme: dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
@@ -36,7 +44,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 header.top{position:sticky;top:0;z-index:5;background:var(--bg);
   padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 8px}
-header.top h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}
+header.top{display:flex;align-items:center;gap:8px}
+header.top h1{flex:1;min-width:0;margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}
 main{padding:4px 16px calc(96px + env(safe-area-inset-bottom,0px));max-width:640px;margin:0 auto}
 
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-top:1px solid var(--line);
@@ -120,7 +129,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
 </style>
 </head>
 <body>
-<header class="top"><h1 id="title">Mis hijos</h1></header>
+<header class="top"><h1 id="title">Mis hijos</h1><button class="iconbtn" id="themeBtn" data-act="tema"></button></header>
 <main id="main"></main>
 
 <nav class="tabs" id="tabs">
@@ -389,7 +398,7 @@ function daySheet(k){
 
 function formPeriodo(p, dia){
   const isNew = !p;
-  p = p || { id: uid(), inicio: dia ? `${dia}T20:00` : '', fin:'', nota:'' };
+  p = p || { id: uid(), inicio: `${dia || dateKey(new Date())}T20:00`, fin:'', nota:'' };
   openSheet(`<h3>${isNew ? 'Nuevo periodo' : 'Editar periodo'}</h3>
     <label>Llegan (fecha y hora)<input type="datetime-local" id="pIni" value="${esc(p.inicio)}"></label>
     <label>Se van (fecha y hora)<input type="datetime-local" id="pFin" value="${esc(p.fin)}"></label>
@@ -407,6 +416,10 @@ function formPeriodo(p, dia){
     } else dur.textContent = 'Usa +7 o +14 días para completar la salida desde la llegada.';
   };
   ini.addEventListener('input', upd); fin.addEventListener('input', upd); upd();
+  // Si la salida está vacía, el selector parte en 20:00 del día de llegada en vez de la hora actual.
+  fin.addEventListener('focus', () => {
+    if (!fin.value) fin.value = `${ini.value ? ini.value.slice(0,10) : dateKey(new Date())}T20:00`;
+  });
   document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
     if (!ini.value){ toast('Primero indica la llegada'); return; }
     const d = parseLocal(ini.value); d.setDate(d.getDate() + Number(b.dataset.add));
@@ -502,6 +515,26 @@ $('#fileIn').addEventListener('change', async e => {
   } catch(err){ alert('No se pudo importar: ' + err.message); }
 });
 
+/* ---------- Tema claro / oscuro ---------- */
+// Sin elección guardada se sigue el tema del teléfono; al tocar el botón se fija el contrario y se recuerda.
+const TEMA_KEY = 'calhijos:tema';
+const oscuroSistema = matchMedia('(prefers-color-scheme: dark)');
+const temaActual = () => document.documentElement.dataset.theme || (oscuroSistema.matches ? 'dark' : 'light');
+function aplicarTema(){
+  const oscuro = temaActual() === 'dark', btn = $('#themeBtn');
+  btn.textContent = oscuro ? '☀️' : '🌙';
+  btn.setAttribute('aria-label', oscuro ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro');
+  document.querySelector('meta[name="theme-color"]').content = oscuro ? '#10151c' : '#f1f3f6';
+}
+function setTema(t){
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem(TEMA_KEY, t); } catch(e){}
+  aplicarTema();
+}
+try { const t = localStorage.getItem(TEMA_KEY); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch(e){}
+oscuroSistema.addEventListener('change', aplicarTema);
+aplicarTema();
+
 /* ---------- Acciones ---------- */
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-act]'); if (!t) return;
@@ -511,6 +544,7 @@ document.addEventListener('click', e => {
     case 'tab': view = t.dataset.v; closeSheet(); render(); window.scrollTo(0,0); break;
     case 'prev': shift(-1); break;
     case 'next': shift(1); break;
+    case 'tema': setTema(temaActual() === 'dark' ? 'light' : 'dark'); break;
     case 'hoy': { const d = new Date(); cur = { y:d.getFullYear(), m:d.getMonth() }; render(); break; }
     case 'day': daySheet(t.dataset.day); break;
     case 'newP': formPeriodo(null, t.dataset.day); break;
